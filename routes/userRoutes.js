@@ -64,7 +64,7 @@ router.get('/getALluser',jwtVerify, async (req, res) => {
     const users = await User.find();
     const requestingUser=req?.user?.username
     const usersWithImages = users.map(user => {
-      if (user.username !== requestingUser) {
+       {
         return {
           username: user.username,
           name: user.name,

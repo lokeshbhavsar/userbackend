@@ -54,7 +54,15 @@ router.post('/getAllPostByUserName', async (req, res) => {
   try {
     const { username } = req.body
     const posts = await Post.find({ username }).sort({ timestamp: -1 }).populate('user');
-    res.json(posts);
+    const postsWithImages = posts.map(post => ({
+      username: post.username,
+      description: post.description,
+      comments: post.comments,
+      timestamp: post.timestamp,
+      pid:post.pid,
+      image: `data:${post.contentType};base64,${post.image.toString('base64')}`
+    }));
+    res.json(postsWithImages);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching posts', error });
   }
@@ -63,7 +71,6 @@ router.post('/getAllPostByUserName', async (req, res) => {
 router.post('/getPostByDescription', async (req, res) => {
   try {
     const { description } = req.body; // Get description from the request body
-
     // Use $regex to find posts with descriptions that include the input description (case-insensitive)
     const posts = await Post.find({ 
       description: { $regex: description, $options: 'i' } // 'i' for case-insensitive search
@@ -115,6 +122,25 @@ router.put('/updatePost', async (req, res) => {
     // Add new comments if provided
 
     // Save the updated post
+    const updatedPost = await post.save();
+    res.json(updatedPost);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating post', error: error.message });
+  }
+});
+
+router.put('/updatePostDescription', async (req, res) => {
+  try {
+    const { pid, username, description } = req.body;
+
+    // Find the post by pid and username
+    const post = await Post.findOne({ pid, username });
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Update description if provided
+    if (description) post.description = description;
+ 
+ 
     const updatedPost = await post.save();
     res.json(updatedPost);
   } catch (error) {
