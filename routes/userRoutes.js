@@ -29,12 +29,42 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post('/register', upload.single('image'), async (req, res) => {
   try {
     const { email, password, name, gender, age, username } = req.body;
+
+    // Check if image file is provided
     if (!req.file) {
       return res.status(400).json({ message: 'Image file is required' });
     }
+
+    // Check if email or username already exists
+    const existingUserByEmail = await User.findOne({ email });
+    if (existingUserByEmail) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    const existingUserByUsername = await User.findOne({ username });
+    if (existingUserByUsername) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hashedPassword, name, gender, age, username, profileImage: req.file.buffer, contentType: req.file.mimetype });
+
+    // Create new user
+    const user = new User({
+      email,
+      password: hashedPassword,
+      name,
+      gender,
+      age,
+      username,
+      profileImage: req.file.buffer, // Storing image as buffer in DB
+      contentType: req.file.mimetype, // MIME type for image
+    });
+
+    // Save the user to the database
     await user.save();
+
+    // Respond with success
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     res.status(400).json({ message: 'Error registering user', error });
